@@ -235,18 +235,7 @@
                 </div>
             </div>
             
-            <!-- Formula Display -->
-            <div class="bg-gray-50 p-4 rounded-lg border">
-                <div class="text-center space-y-2">
-                    <div class="text-sm text-gray-600 mb-2">Formulas:</div>
-                    <div class="font-mono text-lg font-semibold">
-                        Range = (Ship Height ÷ Minutes Pulled) × 1000
-                    </div>
-                    <div class="font-mono text-lg font-semibold">
-                        DOT = Range × ATB Decimal Value
-                    </div>
-                </div>
-            </div>
+
             
             <!-- User Input -->
             <div class="space-y-6">
@@ -265,6 +254,22 @@
                         placeholder="Enter range calculation"
                         step="any"
                     >
+                    
+                    <!-- Range Formula Reveal -->
+                    <div class="text-center">
+                        <button 
+                            type="button"
+                            onclick="this.nextElementSibling.classList.toggle('hidden')"
+                            class="text-sm text-blue-600 hover:text-blue-800 underline focus:outline-none"
+                        >
+                            Show Range Formula
+                        </button>
+                        <div class="hidden mt-2 p-3 bg-gray-50 rounded-lg border">
+                            <div class="font-mono text-lg font-semibold text-center">
+                                Range = (Ship Height ÷ Minutes Pulled) × 1000
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- DOT Input -->
@@ -282,6 +287,22 @@
                         placeholder="Enter DOT calculation"
                         step="any"
                     >
+                    
+                    <!-- DOT Formula Reveal -->
+                    <div class="text-center">
+                        <button 
+                            type="button"
+                            onclick="this.nextElementSibling.classList.toggle('hidden')"
+                            class="text-sm text-blue-600 hover:text-blue-800 underline focus:outline-none"
+                        >
+                            Show DOT Formula
+                        </button>
+                        <div class="hidden mt-2 p-3 bg-gray-50 rounded-lg border">
+                            <div class="font-mono text-lg font-semibold text-center">
+                                DOT = Range × ATB Decimal Value
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- Submit Button -->
