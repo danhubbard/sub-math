@@ -1,431 +1,418 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Submariner Range Calculation Test</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script type="module">
-        import { Application, Controller } from "https://unpkg.com/@hotwired/stimulus/dist/stimulus.js"
-        window.Stimulus = Application.start()
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Submariner Range Calculation Test</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module">
+    import { Application, Controller } from "https://unpkg.com/@hotwired/stimulus/dist/stimulus.js"
+    window.Stimulus = Application.start()
 
-        // Ship Data Controller
-        class ShipDataController extends Controller {
-            static values = { ships: Array, atbValues: Array }
+    // Ship Data Controller
+    class ShipDataController extends Controller {
+      static values = { ships: Array, atbValues: Array }
 
-            connect() {
-                this.shipsValue = [
-                    { name: "Small Fishing Vessel", height: 20 },
-                    { name: "Large Fishing Vessel", height: 50 },
-                    { name: "Warship 110", height: 110 },
-                    { name: "Warship 40", height: 40 },
-                    { name: "Small Merchant Vessel", height: 80 },
-                    { name: "Medium Merchant Vessel", height: 60 },
-                    { name: "Large Merchant Vessel", height: 150 },
-                    { name: "VL MV 200", height: 200 },
-                ];
+      connect() {
+        this.shipsValue = [
+          { name: "Small Fishing Vessel", height: 20 },
+          { name: "Large Fishing Vessel", height: 50 },
+          { name: "Warship 110", height: 110 },
+          { name: "Warship 40", height: 40 },
+          { name: "Small Merchant Vessel", height: 80 },
+          { name: "Medium Merchant Vessel", height: 60 },
+          { name: "Large Merchant Vessel", height: 150 },
+          { name: "VL MV 200", height: 200 },
+        ];
 
-                this.atbValuesValue = [
-                    { angle: 0, decimal: 0 },
-                    { angle: 6, decimal: 0.10 },
-                    { angle: 10, decimal: 0.166 },
-                    { angle: 12, decimal: 0.20 },
-                    { angle: 15, decimal: 0.25 },
-                    { angle: 20, decimal: 0.33 },
-                    { angle: 30, decimal: 0.50 },
-                    { angle: 40, decimal: 0.65 },
-                    { angle: 50, decimal: 0.75 },
-                    { angle: 60, decimal: 0.85 },
-                    { angle: 70, decimal: 0.95 },
-                    { angle: 80, decimal: 1.00 },
-                    { angle: 90, decimal: 1.00 }
-                ];
-            }
+        this.atbValuesValue = [
+          { angle: 0, decimal: 0 },
+          { angle: 6, decimal: 0.10 },
+          { angle: 10, decimal: 0.166 },
+          { angle: 12, decimal: 0.20 },
+          { angle: 15, decimal: 0.25 },
+          { angle: 20, decimal: 0.33 },
+          { angle: 30, decimal: 0.50 },
+          { angle: 40, decimal: 0.65 },
+          { angle: 50, decimal: 0.75 },
+          { angle: 60, decimal: 0.85 },
+          { angle: 70, decimal: 0.95 },
+          { angle: 80, decimal: 1.00 },
+          { angle: 90, decimal: 1.00 }
+        ];
+      }
 
-            getRandomShip() {
-                const randomIndex = Math.floor(Math.random() * this.shipsValue.length);
-                return this.shipsValue[randomIndex];
-            }
+      getRandomShip() {
+        const randomIndex = Math.floor(Math.random() * this.shipsValue.length);
+        return this.shipsValue[randomIndex];
+      }
 
-            getRandomATB() {
-                const randomIndex = Math.floor(Math.random() * this.atbValuesValue.length);
-                return this.atbValuesValue[randomIndex];
-            }
+      getRandomATB() {
+        const randomIndex = Math.floor(Math.random() * this.atbValuesValue.length);
+        return this.atbValuesValue[randomIndex];
+      }
+    }
+
+    // Calculation Controller
+    class CalculationController extends Controller {
+      static targets = ["shipName", "shipHeight", "minutesPulled", "atbAngle", "rangeInput", "dotInput", "submitButton", "nextButton", "correctRange", "correctDot"]
+      static outlets = ["ship-data", "feedback", "timer"]
+      static values = { 
+        currentShip: Object, 
+        minutesPulled: Number, 
+        currentAtb: Object,
+        correctRange: Number,
+        correctDot: Number
+      }
+
+      connect() {
+        this.generateNewProblem();
+        this.updateSubmitButtonState();
+      }
+
+      generateNewProblem() {
+        // Get random ship from ship-data controller
+        this.currentShipValue = this.shipDataOutlet.getRandomShip();
+        
+        // Generate random minutes pulled (2-30)
+        this.minutesPulledValue = Math.floor(Math.random() * 29) + 2;
+        
+        // Get random ATB value
+        this.currentAtbValue = this.shipDataOutlet.getRandomATB();
+        
+        // Calculate correct answers
+        const heightOverMinutes = this.currentShipValue.height / this.minutesPulledValue;
+        const roundedHeightOverMinutes = Math.round(heightOverMinutes * 10) / 10;
+        this.correctRangeValue = roundedHeightOverMinutes * 1000;
+        this.correctDotValue = this.correctRangeValue * this.currentAtbValue.decimal;
+        
+        // Update display
+        this.updateDisplay();
+        
+        // Clear user inputs
+        this.rangeInputTarget.value = "";
+        this.dotInputTarget.value = "";
+        
+        // Reset feedback
+        this.feedbackOutlet.reset();
+        
+        // Reset and start timer
+        this.timerOutlet.reset();
+        this.timerOutlet.start();
+        
+        // Update submit button state
+        this.updateSubmitButtonState();
+      }
+
+      updateDisplay() {
+        this.shipNameTarget.textContent = this.currentShipValue.name;
+        this.shipHeightTarget.textContent = this.currentShipValue.height;
+        this.minutesPulledTarget.textContent = this.minutesPulledValue;
+        this.atbAngleTarget.textContent = `${this.currentAtbValue.angle}S`;
+        this.correctRangeTarget.textContent = this.correctRangeValue;
+        this.correctDotTarget.textContent = this.correctDotValue.toFixed(1);
+      }
+
+      inputChanged() {
+        this.updateSubmitButtonState();
+      }
+
+      updateSubmitButtonState() {
+        const rangeHasValue = this.rangeInputTarget.value.trim() !== "";
+        const dotHasValue = this.dotInputTarget.value.trim() !== "";
+        
+        if (rangeHasValue && dotHasValue) {
+          this.submitButtonTarget.disabled = false;
+          this.submitButtonTarget.classList.remove("opacity-50", "cursor-not-allowed");
+          this.submitButtonTarget.classList.add("hover:bg-blue-700");
+        } else {
+          this.submitButtonTarget.disabled = true;
+          this.submitButtonTarget.classList.add("opacity-50", "cursor-not-allowed");
+          this.submitButtonTarget.classList.remove("hover:bg-blue-700");
+        }
+      }
+
+      checkAnswers() {
+        const userRange = parseFloat(this.rangeInputTarget.value);
+        const userDot = parseFloat(this.dotInputTarget.value);
+        
+        if (isNaN(userRange) || isNaN(userDot)) {
+          this.feedbackOutlet.showError("Please enter valid numbers for both fields");
+          return;
         }
 
-        // Calculation Controller
-        class CalculationController extends Controller {
-            static targets = ["shipName", "shipHeight", "minutesPulled", "atbAngle", "rangeInput", "dotInput", "submitButton", "nextButton", "correctRange", "correctDot"]
-            static outlets = ["ship-data", "feedback", "timer"]
-            static values = { 
-                currentShip: Object, 
-                minutesPulled: Number, 
-                currentAtb: Object,
-                correctRange: Number,
-                correctDot: Number
-            }
+        const rangeCorrect = userRange === this.correctRangeValue;
+        const dotCorrect = Math.abs(userDot - this.correctDotValue) < 0.1; // Allow small floating point tolerance
 
-            connect() {
-                this.generateNewProblem();
-                this.updateSubmitButtonState();
-            }
-
-            generateNewProblem() {
-                // Get random ship from ship-data controller
-                this.currentShipValue = this.shipDataOutlet.getRandomShip();
-                
-                // Generate random minutes pulled (2-30)
-                this.minutesPulledValue = Math.floor(Math.random() * 29) + 2;
-                
-                // Get random ATB value
-                this.currentAtbValue = this.shipDataOutlet.getRandomATB();
-                
-                // Calculate correct answers
-                const heightOverMinutes = this.currentShipValue.height / this.minutesPulledValue;
-                const roundedHeightOverMinutes = Math.round(heightOverMinutes * 10) / 10;
-                this.correctRangeValue = roundedHeightOverMinutes * 1000;
-                this.correctDotValue = this.correctRangeValue * this.currentAtbValue.decimal;
-                
-                // Update display
-                this.updateDisplay();
-                
-                // Clear user inputs
-                this.rangeInputTarget.value = "";
-                this.dotInputTarget.value = "";
-                
-                // Reset feedback
-                this.feedbackOutlet.reset();
-                
-                // Reset and start timer
-                this.timerOutlet.reset();
-                this.timerOutlet.start();
-                
-                // Update submit button state
-                this.updateSubmitButtonState();
-            }
-
-            updateDisplay() {
-                this.shipNameTarget.textContent = this.currentShipValue.name;
-                this.shipHeightTarget.textContent = this.currentShipValue.height;
-                this.minutesPulledTarget.textContent = this.minutesPulledValue;
-                this.atbAngleTarget.textContent = `${this.currentAtbValue.angle}S`;
-                this.correctRangeTarget.textContent = this.correctRangeValue;
-                this.correctDotTarget.textContent = this.correctDotValue.toFixed(1);
-            }
-
-            inputChanged() {
-                this.updateSubmitButtonState();
-            }
-
-            updateSubmitButtonState() {
-                const rangeHasValue = this.rangeInputTarget.value.trim() !== "";
-                const dotHasValue = this.dotInputTarget.value.trim() !== "";
-                
-                if (rangeHasValue && dotHasValue) {
-                    this.submitButtonTarget.disabled = false;
-                    this.submitButtonTarget.classList.remove("opacity-50", "cursor-not-allowed");
-                    this.submitButtonTarget.classList.add("hover:bg-blue-700");
-                } else {
-                    this.submitButtonTarget.disabled = true;
-                    this.submitButtonTarget.classList.add("opacity-50", "cursor-not-allowed");
-                    this.submitButtonTarget.classList.remove("hover:bg-blue-700");
-                }
-            }
-
-            checkAnswers() {
-                const userRange = parseFloat(this.rangeInputTarget.value);
-                const userDot = parseFloat(this.dotInputTarget.value);
-                
-                if (isNaN(userRange) || isNaN(userDot)) {
-                    this.feedbackOutlet.showError("Please enter valid numbers for both fields");
-                    return;
-                }
-
-                const rangeCorrect = userRange === this.correctRangeValue;
-                const dotCorrect = Math.abs(userDot - this.correctDotValue) < 0.1; // Allow small floating point tolerance
-
-                if (rangeCorrect && dotCorrect) {
-                    const elapsedTime = this.timerOutlet.stop();
-                    this.feedbackOutlet.showSuccess(true, true, elapsedTime);
-                    this.nextButtonTarget.classList.remove("hidden");
-                } else {
-                    this.feedbackOutlet.showError("", rangeCorrect, dotCorrect);
-                    this.nextButtonTarget.classList.add("hidden");
-                }
-            }
-
-            nextProblem() {
-                this.generateNewProblem();
-                this.nextButtonTarget.classList.add("hidden");
-            }
+        if (rangeCorrect && dotCorrect) {
+          const elapsedTime = this.timerOutlet.stop();
+          this.feedbackOutlet.showSuccess(true, true, elapsedTime);
+          this.nextButtonTarget.classList.remove("hidden");
+        } else {
+          this.feedbackOutlet.showError("", rangeCorrect, dotCorrect);
+          this.nextButtonTarget.classList.add("hidden");
         }
+      }
 
-        // Feedback Controller
-        class FeedbackController extends Controller {
-            static targets = ["message", "container"]
+      nextProblem() {
+        this.generateNewProblem();
+        this.nextButtonTarget.classList.add("hidden");
+      }
+    }
 
-            showSuccess(rangeCorrect, dotCorrect, elapsedTime) {
-                this.containerTarget.className = "mt-4 p-4 rounded-lg bg-green-100 border border-green-400";
-                const timeMessage = elapsedTime ? ` Completed in ${elapsedTime.toFixed(1)}s.` : "";
-                this.messageTarget.textContent = `Correct. ${timeMessage}`;
-                this.messageTarget.className = "text-green-700 font-semibold";
-            }
+    // Feedback Controller
+    class FeedbackController extends Controller {
+      static targets = ["message", "container"]
 
-            showError(message, rangeCorrect, dotCorrect) {
-                this.containerTarget.className = "mt-4 p-4 rounded-lg bg-red-100 border border-red-400";
-                
-                let errorMessage = "Incorrect. Try again. ";
-                if (!rangeCorrect && !dotCorrect) {
-                    errorMessage += "Both calculations are incorrect.";
-                } else if (!rangeCorrect) {
-                    errorMessage += "Range calculation is incorrect.";
-                } else if (!dotCorrect) {
-                    errorMessage += "DOT calculation is incorrect.";
-                }
-                
-                this.messageTarget.textContent = message || errorMessage;
-                this.messageTarget.className = "text-red-700 font-semibold";
-            }
+      showSuccess(rangeCorrect, dotCorrect, elapsedTime) {
+        this.containerTarget.className = "mt-4 p-4 rounded-lg bg-green-100 border border-green-400";
+        const timeMessage = elapsedTime ? ` Completed in ${elapsedTime.toFixed(1)}s.` : "";
+        this.messageTarget.textContent = `Correct. ${timeMessage}`;
+        this.messageTarget.className = "text-green-700 font-semibold";
+      }
 
-            reset() {
-                this.containerTarget.className = "mt-4 p-4 rounded-lg hidden";
-                this.messageTarget.textContent = "";
-            }
+      showError(message, rangeCorrect, dotCorrect) {
+        this.containerTarget.className = "mt-4 p-4 rounded-lg bg-red-100 border border-red-400";
+        
+        let errorMessage = "Incorrect. Try again. ";
+        if (!rangeCorrect && !dotCorrect) {
+          errorMessage += "Both calculations are incorrect.";
+        } else if (!rangeCorrect) {
+          errorMessage += "Range calculation is incorrect.";
+        } else if (!dotCorrect) {
+          errorMessage += "DOT calculation is incorrect.";
         }
+        
+        this.messageTarget.textContent = message || errorMessage;
+        this.messageTarget.className = "text-red-700 font-semibold";
+      }
 
-        // Timer Controller
-        class TimerController extends Controller {
-            static targets = ["display"]
-            static values = { startTime: Number, isRunning: Boolean }
+      reset() {
+        this.containerTarget.className = "mt-4 p-4 rounded-lg hidden";
+        this.messageTarget.textContent = "";
+      }
+    }
 
-            connect() {
-                this.isRunningValue = false;
-                this.updateDisplay();
-            }
+    // Timer Controller
+    class TimerController extends Controller {
+      static targets = ["display"]
+      static values = { startTime: Number, isRunning: Boolean }
 
-            start() {
-                this.startTimeValue = Date.now();
-                this.isRunningValue = true;
-                this.updateTimer();
-            }
+      connect() {
+        this.isRunningValue = false;
+        this.updateDisplay();
+      }
 
-            stop() {
-                this.isRunningValue = false;
-                return this.getElapsedTime();
-            }
+      start() {
+        this.startTimeValue = Date.now();
+        this.isRunningValue = true;
+        this.updateTimer();
+      }
 
-            reset() {
-                this.isRunningValue = false;
-                this.startTimeValue = 0;
-                this.updateDisplay();
-            }
+      stop() {
+        this.isRunningValue = false;
+        return this.getElapsedTime();
+      }
 
-            getElapsedTime() {
-                if (!this.startTimeValue) return 0;
-                return (Date.now() - this.startTimeValue) / 1000;
-            }
+      reset() {
+        this.isRunningValue = false;
+        this.startTimeValue = 0;
+        this.updateDisplay();
+      }
 
-            updateTimer() {
-                if (!this.isRunningValue) return;
-                
-                this.updateDisplay();
-                requestAnimationFrame(() => this.updateTimer());
-            }
+      getElapsedTime() {
+        if (!this.startTimeValue) return 0;
+        return (Date.now() - this.startTimeValue) / 1000;
+      }
 
-            updateDisplay() {
-                const elapsed = this.getElapsedTime();
-                this.displayTarget.textContent = `${elapsed.toFixed(1)}s`;
-            }
-        }
+      updateTimer() {
+        if (!this.isRunningValue) return;
+        
+        this.updateDisplay();
+        requestAnimationFrame(() => this.updateTimer());
+      }
 
-        // Register controllers
-        Stimulus.register("ship-data", ShipDataController)
-        Stimulus.register("calculation", CalculationController)
-        Stimulus.register("feedback", FeedbackController)
-        Stimulus.register("timer", TimerController)
-    </script>
+      updateDisplay() {
+        const elapsed = this.getElapsedTime();
+        this.displayTarget.textContent = `${elapsed.toFixed(1)}s`;
+      }
+    }
+
+    // Register controllers
+    Stimulus.register("ship-data", ShipDataController)
+    Stimulus.register("calculation", CalculationController)
+    Stimulus.register("feedback", FeedbackController)
+    Stimulus.register("timer", TimerController)
+  </script>
 </head>
 <body class="bg-gray-100 min-h-screen py-8">
-    <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8">
-        <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">
-            Submariner Range Calculation Test
-        </h1>
+  <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8">
+    <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">
+      Submariner Range Calculation Test
+    </h1>
+    
+    <!-- Ship Data Controller (hidden, just for data management) -->
+    <div data-controller="ship-data" class="hidden ship-data-controller"></div>
+    
+    <!-- Main Application -->
+    <div data-controller="calculation feedback" 
+       data-calculation-ship-data-outlet=".ship-data-controller"
+       data-calculation-feedback-outlet=".feedback-controller"
+       data-calculation-timer-outlet=".timer-display"
+       class="space-y-6">
+      
+      <!-- Problem Display -->
+      <div class="bg-blue-50 p-6 rounded-lg border border-blue-200">
+        <h2 class="text-xl font-semibold text-blue-800 mb-4">Current Problem</h2>
         
-        <!-- Ship Data Controller (hidden, just for data management) -->
-        <div data-controller="ship-data" class="hidden ship-data-controller"></div>
-        
-        <!-- Main Application -->
-        <div data-controller="calculation feedback" 
-             data-calculation-ship-data-outlet=".ship-data-controller"
-             data-calculation-feedback-outlet=".feedback-controller"
-             data-calculation-timer-outlet=".timer-display"
-             class="space-y-6">
-            
-            <!-- Problem Display -->
-            <div class="bg-blue-50 p-6 rounded-lg border border-blue-200">
-                <h2 class="text-xl font-semibold text-blue-800 mb-4">Current Problem</h2>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-center">
-                    <div class="bg-white p-4 rounded border flex flex-col justify-center">
-                        <div class="font-bold text-lg" data-calculation-target="shipName">-</div>
-                    </div>
-                    
-                    <div class="bg-white p-4 rounded border flex flex-col justify-center">
-                        <div class="font-bold text-lg" data-calculation-target="shipHeight">-</div>
-                        <div class="text-sm text-gray-600 mt-1">on top</div>
-                    </div>
-                    
-                    <div class="bg-white p-4 rounded border flex flex-col justify-center">
-                        <div class="font-bold text-lg" data-calculation-target="minutesPulled">-</div>
-                        <div class="text-sm text-gray-600 mt-1">minutes</div>
-                    </div>
-                    
-                    <div class="bg-white p-4 rounded border flex flex-col justify-center">
-                        <div class="font-bold text-lg" data-calculation-target="atbAngle">-</div>
-                        <div class="text-sm text-gray-600 mt-1">ATB</div>
-                    </div>
-                </div>
-            </div>
-            
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-center">
+          <div class="bg-white p-4 rounded border flex flex-col justify-center">
+            <div class="font-bold text-lg" data-calculation-target="shipName">-</div>
+          </div>
+          
+          <div class="bg-white p-4 rounded border flex flex-col justify-center">
+            <div class="font-bold text-lg" data-calculation-target="shipHeight">-</div>
+            <div class="text-sm text-gray-600 mt-1">on top</div>
+          </div>
+          
+          <div class="bg-white p-4 rounded border flex flex-col justify-center">
+            <div class="font-bold text-lg" data-calculation-target="minutesPulled">-</div>
+            <div class="text-sm text-gray-600 mt-1">minutes</div>
+          </div>
+          
+          <div class="bg-white p-4 rounded border flex flex-col justify-center">
+            <div class="font-bold text-lg" data-calculation-target="atbAngle">-</div>
+            <div class="text-sm text-gray-600 mt-1">ATB</div>
+          </div>
+        </div>
+      </div>
+      
 
-            
-            <!-- User Input -->
-            <div class="space-y-6">
-                <!-- Range Input -->
-                <div class="space-y-2">
-                    <label for="rangeAnswer" class="block text-lg font-semibold text-gray-700">
-                        Calculate the Range:
-                    </label>
-                    
-                    <input 
-                        type="number" 
-                        id="rangeAnswer"
-                        data-calculation-target="rangeInput"
-                        data-action="input->calculation#inputChanged"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
-                        placeholder="Enter range calculation"
-                        step="any"
-                    >
-                    
-                    <!-- Range Formula Reveal -->
-                    <div class="text-center">
-                        <button 
-                            type="button"
-                            onclick="this.nextElementSibling.classList.toggle('hidden')"
-                            class="text-sm text-blue-600 hover:text-blue-800 underline focus:outline-none"
-                        >
-                            Show Range Formula
-                        </button>
-                        <div class="hidden mt-2 p-3 bg-gray-50 rounded-lg border">
-                            <div class="font-mono text-lg font-semibold text-center">
-                                Range = (Ship Height ÷ Minutes Pulled) × 1000
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- DOT Input -->
-                <div class="space-y-2">
-                    <label for="dotAnswer" class="block text-lg font-semibold text-gray-700">
-                        Calculate the DOT:
-                    </label>
-                    
-                    <input 
-                        type="number" 
-                        id="dotAnswer"
-                        data-calculation-target="dotInput"
-                        data-action="input->calculation#inputChanged"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
-                        placeholder="Enter DOT calculation"
-                        step="any"
-                    >
-                    
-                    <!-- DOT Formula Reveal -->
-                    <div class="text-center">
-                        <button 
-                            type="button"
-                            onclick="this.nextElementSibling.classList.toggle('hidden')"
-                            class="text-sm text-blue-600 hover:text-blue-800 underline focus:outline-none"
-                        >
-                            Show DOT Formula
-                        </button>
-                        <div class="hidden mt-2 p-3 bg-gray-50 rounded-lg border">
-                            <div class="font-mono text-lg font-semibold text-center">
-                                DOT = Range × ATB Decimal Value
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Submit Button -->
-                <div class="text-center">
-                    <button 
-                        data-calculation-target="submitButton"
-                        data-action="click->calculation#checkAnswers"
-                        class="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors opacity-50 cursor-not-allowed"
-                        disabled
-                    >
-                        Submit Answers
-                    </button>
-                </div>
-                
-                <!-- Timer Display -->
-                <div class="text-center mt-4 timer-display" data-controller="timer">
-                    <div class="inline-flex items-center space-x-2 px-4 py-2 bg-gray-50 rounded-lg border">
-                        <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <span class="text-gray-700 font-medium">Time:</span>
-                        <span data-timer-target="display" class="font-mono text-lg font-bold text-blue-600">0.0s</span>
-                    </div>
-                </div>
-                
-                <!-- Testing: Show Correct Answers -->
-                <div class="mt-4 p-3 bg-yellow-100 border border-yellow-300 rounded-lg">
-                    <div class="text-sm text-yellow-700 space-y-1">
-                        <div>
-                            <strong>Expected Range (for testing):</strong> 
-                            <span data-calculation-target="correctRange" class="font-mono">-</span>
-                        </div>
-                        <div>
-                            <strong>Expected DOT (for testing):</strong> 
-                            <span data-calculation-target="correctDot" class="font-mono">-</span>
-                        </div>
-                    </div>
-                </div>
+      
+      <!-- User Input -->
+      <div class="space-y-6">
+        <!-- Range Input -->
+        <div class="space-y-2">
+          <label for="rangeAnswer" class="block text-lg font-semibold text-gray-700">
+            Calculate the Range:
+          </label>
+          
+          <input 
+            type="number" 
+            id="rangeAnswer"
+            data-calculation-target="rangeInput"
+            data-action="input->calculation#inputChanged"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
+            placeholder="Enter range calculation"
+            step="any"
+          >
+          
+          <!-- Range Formula Reveal -->
+          <div class="text-center">
+            <button 
+              type="button"
+              onclick="this.nextElementSibling.classList.toggle('hidden')"
+              class="text-sm text-blue-600 hover:text-blue-800 underline focus:outline-none"
+            >
+              Show Range Formula
+            </button>
+            <div class="hidden mt-2 p-3 bg-gray-50 rounded-lg border">
+              <div class="font-mono text-lg font-semibold text-center">
+                Range = (Ship Height ÷ Minutes Pulled) × 1000
+              </div>
             </div>
-            
-            <!-- Feedback Area -->
-            <div data-controller="feedback" class="feedback-controller">
-                <div data-feedback-target="container" class="mt-4 p-4 rounded-lg hidden">
-                    <div data-feedback-target="message"></div>
-                </div>
-            </div>
-            
-            <!-- Next Button -->
-            <div class="text-center">
-                <button 
-                    data-calculation-target="nextButton"
-                    data-action="click->calculation#nextProblem"
-                    class="hidden px-8 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
-                >
-                    Next Problem
-                </button>
-            </div>
+          </div>
         </div>
         
-        <!-- Instructions -->
-        <div class="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <h3 class="font-semibold text-yellow-800 mb-2">Instructions:</h3>
-            <ul class="text-sm text-yellow-700 space-y-1">
-                <li>• Calculate both Range and DOT using the provided formulas</li>
-                <li>• Range = (Ship Height ÷ Minutes Pulled) × 1000</li>
-                <li>• DOT = Range × ATB Decimal Value</li>
-                <li>• Submit button is disabled until both fields have values</li>
-                <li>• Both calculations must be correct to proceed to the next problem</li>
-                <li>• Green borders indicate correct answers, red borders indicate incorrect answers</li>
-            </ul>
+        <!-- DOT Input -->
+        <div class="space-y-2">
+          <label for="dotAnswer" class="block text-lg font-semibold text-gray-700">
+            Calculate the DOT:
+          </label>
+          
+          <input 
+            type="number" 
+            id="dotAnswer"
+            data-calculation-target="dotInput"
+            data-action="input->calculation#inputChanged"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
+            placeholder="Enter DOT calculation"
+            step="any"
+          >
+          
+          <!-- DOT Formula Reveal -->
+          <div class="text-center">
+            <button 
+              type="button"
+              onclick="this.nextElementSibling.classList.toggle('hidden')"
+              class="text-sm text-blue-600 hover:text-blue-800 underline focus:outline-none"
+            >
+              Show DOT Formula
+            </button>
+            <div class="hidden mt-2 p-3 bg-gray-50 rounded-lg border">
+              <div class="font-mono text-lg font-semibold text-center">
+                DOT = Range × ATB Decimal Value
+              </div>
+            </div>
+          </div>
         </div>
+        
+        <!-- Submit Button -->
+        <div class="text-center">
+          <button 
+            data-calculation-target="submitButton"
+            data-action="click->calculation#checkAnswers"
+            class="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors opacity-50 cursor-not-allowed"
+            disabled
+          >
+            Submit Answers
+          </button>
+        </div>
+        
+        <!-- Timer Display -->
+        <div class="text-center mt-4 timer-display" data-controller="timer">
+          <div class="inline-flex items-center space-x-2 px-4 py-2 bg-gray-50 rounded-lg border">
+            <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span class="text-gray-700 font-medium">Time:</span>
+            <span data-timer-target="display" class="font-mono text-lg font-bold text-blue-600">0.0s</span>
+          </div>
+        </div>
+        
+        <!-- Testing: Show Correct Answers -->
+        <div class="mt-4 p-3 bg-yellow-100 border border-yellow-300 rounded-lg">
+          <div class="text-sm text-yellow-700 space-y-1">
+            <div>
+              <strong>Expected Range (for testing):</strong> 
+              <span data-calculation-target="correctRange" class="font-mono">-</span>
+            </div>
+            <div>
+              <strong>Expected DOT (for testing):</strong> 
+              <span data-calculation-target="correctDot" class="font-mono">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Feedback Area -->
+      <div data-controller="feedback" class="feedback-controller">
+        <div data-feedback-target="container" class="mt-4 p-4 rounded-lg hidden">
+          <div data-feedback-target="message"></div>
+        </div>
+      </div>
+      
+      <!-- Next Button -->
+      <div class="text-center">
+        <button 
+          data-calculation-target="nextButton"
+          data-action="click->calculation#nextProblem"
+          class="hidden px-8 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
+        >
+          Next Problem
+        </button>
+      </div>
     </div>
+  </div>
 </body>
 </html>
