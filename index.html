@@ -142,7 +142,7 @@
         }
 
         const rangeCorrect = userRange === this.correctRangeValue;
-        const dotCorrect = Math.abs(userDot - this.correctDotValue) < 0.1; // Allow small floating point tolerance
+        const dotCorrect = Math.abs(userDot - this.correctDotValue) <= 50; // Accept answers within ±50 (nearest 100)
 
         if (rangeCorrect && dotCorrect) {
           const elapsedTime = this.timerOutlet.stop();
