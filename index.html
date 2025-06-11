@@ -142,7 +142,11 @@
         }
 
         const rangeCorrect = userRange === this.correctRangeValue;
-        const dotCorrect = Math.abs(userDot - this.correctDotValue) <= 50; // Accept answers within ±50 (nearest 100)
+        
+        // Calculate acceptable DOT range (nearest 100 down to nearest 100 up)
+        const dotLowerBound = Math.floor(this.correctDotValue / 100) * 100;
+        const dotUpperBound = Math.ceil(this.correctDotValue / 100) * 100;
+        const dotCorrect = userDot >= dotLowerBound && userDot <= dotUpperBound;
 
         if (rangeCorrect && dotCorrect) {
           const elapsedTime = this.timerOutlet.stop();
